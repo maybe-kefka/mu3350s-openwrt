@@ -1,0 +1,16 @@
+# local / private data (never commit)
+local/
+secrets/
+*.bin
+*.img
+*.log
+work/
+backup*/
+
+# generated during setup
+scripts/proxy/config.yaml
+answers/mu300-answers.txt
+
+# OS
+.DS_Store
+Thumbs.db

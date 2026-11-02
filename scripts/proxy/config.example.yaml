@@ -1,0 +1,99 @@
+# mihomo (Clash Meta) configuration used by the F50 proxy setup.
+# Copy to /etc/mihomo/config.yaml on the device and fill the placeholders:
+#   YOUR-SUBSCRIPTION-URL  your Clash Meta subscription (clashmeta=1) link
+#   YOUR_SECRET            dashboard/API secret (any string; empty disables auth)
+# See docs/08-vpn-proxy.md for the full explanation.
+mixed-port: 7890
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: info
+ipv6: false
+
+external-controller: 0.0.0.0:9090
+secret: "YOUR_SECRET"
+external-ui: /etc/mihomo/ui
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+unified-delay: true
+tcp-concurrent: true
+
+tproxy-port: 7895
+
+tun:
+  enable: false
+
+dns:
+  enable: true
+  ipv6: false
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+    - 'localhost.ptlogin2.qq.com'
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+proxy-providers:
+  provider:
+    type: http
+    url: "YOUR-SUBSCRIPTION-URL"
+    interval: 86400
+    path: ./providers/provider.yaml
+    health-check:
+      enable: true
+      url: https://www.gstatic.com/generate_204
+      interval: 300
+
+proxy-groups:
+  - name: Proxy
+    type: select
+    use:
+      - provider
+    proxies:
+      - Auto
+      - DIRECT
+  - name: Auto
+    type: url-test
+    use:
+      - provider
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+rule-providers:
+  lan:
+    type: http
+    behavior: ipcidr
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt
+    path: ./ruleset/lan.yaml
+    interval: 86400
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+  direct:
+    type: http
+    behavior: domain
+    url: https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+rules:
+  - RULE-SET,lan,DIRECT
+  - RULE-SET,cncidr,DIRECT
+  - RULE-SET,direct,DIRECT
+  - MATCH,Proxy
