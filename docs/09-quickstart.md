@@ -5,7 +5,7 @@
 ```
 adb devices
   MU300LINUX-<serial>-...   device   → OpenWrt
-  MU3350S0000                  device   → Android（裸序列号）
+  <device-serial>                  device   → Android（裸序列号）
 ```
 
 USB 网络地址：Android = `192.168.0.1`，OpenWrt = `192.168.77.1`。

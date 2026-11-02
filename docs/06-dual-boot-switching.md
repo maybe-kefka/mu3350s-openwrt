@@ -59,8 +59,8 @@ Windows 上双击即可：
 
 ```
 adb devices
-  MU300LINUX-MU3350S0000-312624d4   device    # Linux（OpenWrt）
-  MU3350S0000                        device    # Android（裸序列号）
+  MU300LINUX-<serial>-312624d4   device    # Linux（OpenWrt）
+  <device-serial>                        device    # Android（裸序列号）
 ```
 
 USB 网络地址：Android = `192.168.0.1`，OpenWrt = `192.168.77.1`。
