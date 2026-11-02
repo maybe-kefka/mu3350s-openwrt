@@ -130,6 +130,32 @@ mu3350s-openwrt/
 | [08 内置代理](docs/08-vpn-proxy.md) | mihomo + TPROXY + fake-ip 分流、面板 |
 | [09 日常使用](docs/09-quickstart.md) | 切换/访问/维护/排障速查 |
 
+## 与 [mu300-linux](https://github.com/dikeckaan/mu300-linux) 的关系
+
+**mu300-linux 是安装器/系统层，不是 root 工具**。它的 README 明确写着：
+*Rooting, unlocking, patching and recovery are not part of this project.*
+安装器默认你的设备**已经 root**（有 Magisk 的 `su`），并且 boot chain 已经能启动未签名内核。
+
+对一台**锁 BL、没 root、B04 eSIM 固件的出厂 MU3350S**，直接跑 mu300-linux 会在 `pull` 阶段失败：
+
+```
+/system/bin/sh: su: inaccessible or not found
+```
+
+本项目补上的正是它不负责的前置环节：
+
+| 环节 | mu300-linux | 本项目额外做的 |
+|---|---|---|
+| Root | 假定已有 Magisk `su` | 利用 ZTE Samba `root preexec` 取得 root，无需 Magisk；带 su 兼容层、adbd TCP、重启自动恢复 |
+| 锁 BL 启动 Linux | 明确不负责 AVB/解锁 | 离线生成 **B04 专用 TrustOS AVB 绕过镜像**（只取官方 B03 包里 4 字节补丁的规律，用本机 sml_a + trustos_a 重新合成，SHA-256 可复现） |
+| 安装器跑法 | 假设 USB adb + `su` | RootSock 替换 SuDo/SuDoToFile、修 `$HOME`、禁用自更新与 USB 模式切换，走 TCP adb + root socket |
+| eSIM / 5G | 安装器不刷 modem | 不刷 B09、不换 Magisk boot，boot_a 保持原厂，eSIM 与 5G 完整保留 |
+| 双系统操作 | 提供 `mu300-next-boot` / `mu300-os` | 补上 Android↔OpenWrt 一键切换脚本、misc 32 字节状态备份/恢复、失败回退验证 |
+| 代理/VPN | 有独立模块 [mu300-linux-vpn](https://github.com/dikeckaan/mu300-linux-vpn)（Xray/sing-box/mihomo 引擎、订阅、kill switch、面板） | 本项目给的是**自建轻量方案**：mihomo + nftables TPROXY + fake-ip DNS + metacubexd 面板，并修复了 DHCP 被 TPROXY 拦截、LAN IPv6 泄漏等细节；两种方案可二选一 |
+
+**一句话**：设备如果已经是 root/解锁状态，mu300-linux 可以直接用；
+而锁 BL 的 B04 eSIM 出厂机，需要本项目这套 root + AVB 补丁 + 安装器适配之后，才能用上 mu300-linux 的安装器。
+
 ## 已验证项目
 
 | 检查 | 结果 |
