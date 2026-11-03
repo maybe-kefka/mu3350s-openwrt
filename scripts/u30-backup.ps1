@@ -2,7 +2,8 @@
 # READ-ONLY: runs "r all" then "reset" - no write to the device.
 # Needs spd_dump.exe + fdl1-dl.bin + fdl2-dl.bin (spreadtrum_flash / the F50 toolkit build).
 # Edit $PT below if yours are elsewhere (default: C:\f50-work\part-tool).
-#$ErrorActionPreference = 'Continue'
+
+$ErrorActionPreference = 'Continue'
 $PT   = 'C:\f50-work\part-tool'
 $SPD  = Join-Path $PT 'bin\spd_dump.exe'
 $FDL1 = Join-Path $PT 'bin\fdl1-dl.bin'
