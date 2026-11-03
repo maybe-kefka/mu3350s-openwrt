@@ -10,6 +10,10 @@ backup*/
 # generated during setup
 scripts/proxy/config.yaml
 answers/mu300-answers.txt
+answers/u30air-internal-answers.txt
+
+# U30 Air working dirs
+u30-flash-tmp/
 
 # OS
 .DS_Store

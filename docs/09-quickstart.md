@@ -78,3 +78,18 @@ df -h                        # TF 卡空间（根文件系统在 /dev/mmcblk1p1�
   `chattr -i /data/samba/etc/smb.conf`、删除 `/data/local/tmp/root*`、`setprop persist.service.adb.tcp.port ''`
 - OpenWrt 侧不要长期暴露 9090 控制面板到不可信网络（仅热点内网使用）
 - 更换/转卖设备前，恢复原厂固件并清除个人配置
+
+## U30 Air 速查
+
+| | |
+|---|---|
+| 管理地址 | http://192.168.78.1（LuCI）/ SSH `root@192.168.78.1` |
+| 默认启动 | Linux（失败 5 次回 Android） |
+| 切回 Android | `mu300-next-boot android && reboot` |
+| Android 切回 Linux | 在 Android 上 `su -c mu300-linux` |
+| USB ADB（Linux 侧） | `adb devices` → `MU300LINUX-<serial>-<cid>`，root shell |
+| mihomo 面板 | http://192.168.78.1:9090/ui/ |
+| 日志 | `logread -e mihomo` |
+
+完整设备流程见 [10 U30 Air](10-u30-air.md)。
+

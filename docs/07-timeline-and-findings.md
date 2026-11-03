@@ -52,3 +52,21 @@
 | WiFi 热点 | `F50-OpenWrt` 5GHz VHT80 |
 | 5G 上网 | ping 223.5.5.5 33ms、HTTP 200 |
 | 双系统切换脚本 | 双向各测 2 次，均成功 |
+
+## 2026-11-03 · U30 Air（B33，32 GB 版）追加记录
+
+1. **B33 没有软开 ADB 的路**：`USB_PORT_SETTING` 恒 failure（UFI-TOOLS #146 无公开解法），
+   切 CDC-ECM 只出 `19D2:1353`（ECM+MTP，无 ADB），无 telnet/调试端口，Web 无“重启到下载模式”接口。
+2. **热重启抓不到 boot_diag**：`spd_dump --kickto 2` 在 warm reboot 后必然 `find port failed`，只能冷启动。
+3. **kick 超时反而有用**：直插模式常输出 `kick reboot timeout` + `usb_send failed (0 / 1)`，
+   此时设备**已停在 BROM**（`1782:4D00`）；不要拔线，改用 `exec_addr 0x65012f48 fdl … fdl … exec` 接管即可。
+4. **B33 只拒绝改 uboot**（#386）：boot/trustos 可以写；`trustos` 比 6 MiB 分区小，必须 `wof` 偏移写。
+5. **root 包自带无线 ADB**：解包 boot ramdisk 可见 `overlay.d/adbip.rc` + `start_adbip.sh`，
+   开机设 `persist.adb.secure=0`、`persist.service.adb.tcp.port=5555` 并重启 adbd；实测免授权可用。
+6. **Samba 共享名是 `U30 Air`**（不是 F50）；`root preexec` 套路完全一样，`scripts/f50-root-shell.mjs` 已自动尝试两种名字。
+7. **32 GB 版收缩 userdata 后 Android recovery 没有执行 wipe**：GPT 已缩、token 已写、BCB 已写，但重启直接进 Android，
+   且 f2fs 回滚到旧检查点（数据不一致）。安装器第二次运行靠事务恢复完成 Linux 安装；Android 数据建议手动恢复出厂。
+8. **安装器需要给 `adb push` 降噪**：新版 platform-tools 把进度写 stderr，PowerShell 5.1 + `$ErrorActionPreference=Stop` 会当错误抛出；
+   在 `install.ps1` 里加一个 `adb` 函数走 `cmd /c`、并给 PushUnix 加 `1>$null 2>$null` 即可（见 docs/10）。
+9. **本机实测完整通过**：备份 → 刷 trustos+boot（回读一致）→ 无线 ADB → Samba root → 收缩 userdata → OpenWrt 7.3.1 启动 → 5G → mihomo 分流。
+

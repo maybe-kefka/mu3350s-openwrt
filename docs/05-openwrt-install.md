@@ -110,3 +110,17 @@ WiFi AP                  F50-OpenWrt / YOUR_WIFI_PASSWORD (5GHz ch36 VHT80)
 5G 上网                  ping 223.5.5.5 OK, sipa_eth0 = 10.213.102.102
 adb over USB             MU300LINUX-...-... device (root)
 ```
+
+## U30 Air（32 GB 版，无卡槽）
+
+U30 Air 没有空闲空间，也**不能装 TF 卡**：安装器会检测到 32 GB 版并走实验性的「收缩 userdata」路径
+（`keep` 在线收缩在本机被内核拒绝，errno=22；`reset` 会清 Android 数据）。
+完整步骤、实测偏差（该机没有执行 recovery 的 wipe BCB、f2fs 回滚）与答案文件见：
+**[10 U30 Air](10-u30-air.md)**。
+
+```powershell
+# 只读检查、正式安装（答案文件见 answers/u30air-internal-answers.example.txt）
+powershell -ExecutionPolicy Bypass -File scripts\installer\install-openwrt.ps1 -SrcDir C:\f50-work\mu300-src -Check
+powershell -ExecutionPolicy Bypass -File scripts\installer\install-openwrt.ps1 -SrcDir C:\f50-work\mu300-src -AnswersFile answers\u30air-internal-answers.txt
+```
+

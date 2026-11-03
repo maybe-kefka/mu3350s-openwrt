@@ -7,6 +7,11 @@
 // root.sh starts `socat TCP-LISTEN:4444,reuseaddr,fork EXEC:/system/bin/sh`, so any
 // connection to port 4444 is a root shell on the device.
 //
+// The Samba share name differs per firmware: F50 -> "F50", U30 Air -> "U30 Air".
+// This client tries the known names (or the one given with --share). If Windows
+// refuses guest SMB (error 1272), enable it once as administrator:
+//   reg add HKLM\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters /v AllowInsecureGuestAuth /t REG_DWORD /d 1 /f
+//
 // Usage (Windows host, while Android is running):
 //   node f50-root-shell.mjs trigger          # SMB connect -> starts the root shell
 //   node f50-root-shell.mjs ping             # trigger if needed, then `id -u`
@@ -30,15 +35,32 @@ function take(name, def) {
 const HOST = take("--host", "192.168.0.1");
 const PORT = Number(take("--port", "4444"));
 const TIMEOUT = Number(take("--timeout", "180000"));
+const SHARE = take("--share", "");
 const mode = argv.shift() || "ping";
 const MARK = "__F50_RC__";
 
 function sambaTrigger() {
   const netExe = "C:\\Windows\\System32\\net.exe";
-  const share = "\\\\" + HOST + "\\F50";
-  for (const a of [["use", share, "/delete", "/y"], ["use", share, "/user:guest", ""]]) {
-    try { execFileSync(netExe, a, { encoding: "utf8", timeout: 30000, windowsHide: true }); } catch (_) { }
+  const candidates = SHARE ? [SHARE] : ["F50", "U30 Air", "U30Air", "MU300", "V50"];
+  for (const name of candidates) {
+    const share = "\\\\" + HOST + "\\" + name;
+    let connected = false;
+    for (const a of [["use", share, "/delete", "/y"], ["use", share, "/user:guest", ""]]) {
+      try { execFileSync(netExe, a, { encoding: "utf8", timeout: 30000, windowsHide: true }); connected = true; } catch (_) { }
+    }
+    if (connected) return;
   }
+  // last resort: a small SMB2 client if one is installed (npm i @marsaud/smb2; run node with --openssl-legacy-provider)
+  try {
+    const SMB2 = require("@marsaud/smb2");
+    for (const name of candidates) {
+      try {
+        const c = new SMB2({ share: "\\\\" + HOST + "\\" + name, domain: "WORKGROUP", username: "guest", password: "" });
+        c.readdir("").then(() => { try { c.close(); } catch (_) { } }).catch(() => { });
+        return;
+      } catch (_) { }
+    }
+  } catch (_) { }
 }
 
 function open() {

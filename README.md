@@ -1,15 +1,18 @@
-# ZTE F50 / MU3350S — OpenWrt on the SD card with Android dual-boot
+# ZTE F50 / MU3350S & U30 Air — OpenWrt 双系统 + mihomo 透明代理
 
-> 中兴 F50（型号 **MU3350S**，展锐 **UMS9620 / T760**）eSIM 版：保留原厂 Android 与 eSIM/5G，
-> 把 **OpenWrt** 安装到 TF 卡，实现 Android / OpenWrt 双系统启动，并内置 **Clash Meta (mihomo) 透明代理**，
+> 展锐 **UMS9620 / T760** 平台的中兴随身 WiFi：
+> **F50（MU3350S，eSIM 版）** 把 **OpenWrt** 装到 TF 卡，保留原厂 Android 与 eSIM/5G；
+> **U30 Air（U30AirV1.0.0B33，32 GB 版，无卡槽）** 走 BROM 刷 root 包 + 收缩 userdata 装到内置 eMMC。
+> 两者都是 Android / OpenWrt 双系统启动，并内置 **Clash Meta (mihomo) 透明代理**，
 > 让连接热点的所有设备自动走机场订阅节点。
 
 This repository documents a **complete, working procedure** to install OpenWrt on the
 ZTE F50 / MU3350S (Unisoc UMS9620) while keeping the stock Android + eSIM, plus a built-in
 mihomo/TPROXY split-routing VPN for hotspot clients.
 
-- ✅ 已在真机上完成并验证（2026-11-02，F50_ST_ESIMV1.0.0B04，纯 eSIM 版）
-- ⚠️ 仅针对该机型该固件；其他版本请先完整备份并自行评估
+- ✅ F50 已在真机验证（2026-11-02，F50_ST_ESIMV1.0.0B04，纯 eSIM 版）
+- ✅ U30 Air 已在真机验证（2026-11-03，U30AirV1.0.0B33 32 GB 版；流程见 [docs/10](docs/10-u30-air.md)）
+- ⚠️ 仅针对上述机型/固件；其他版本请先完整备份并自行评估
 - 📦 本仓库**不包含**任何厂商固件/二进制：补丁镜像由脚本从你自己的分区备份生成
 
 ---
@@ -26,7 +29,17 @@ mihomo/TPROXY split-routing VPN for hotspot clients.
 | WiFi | 继承原厂热点名/密码（5 GHz），可自定义 |
 | 内置代理 | mihomo + nftables TPROXY + fake-ip DNS：国内直连、海外走订阅节点；热点/USB 客户端零配置 |
 | 节点选择 | 内置 metacubexd 面板（`http://192.168.77.1:9090/ui/`），可选节点、看连接、自动测速 |
+| U30 Air 专项 | 无卡槽 32 GB 版：BROM 刷 one-key-root（patched trustos + Magisk boot）→ 自动无线 ADB → Samba root → 收缩 userdata 8 GiB 装 OpenWrt |
 | 回滚 | 完整分区备份 + 展锐 FDL 直连刷回原厂 |
+
+## 两种机型、两条安装路径
+
+| | F50 / MU3350S | U30 Air（B33） |
+|---|---|---|
+| 安装位置 | TF 卡 ext4（`mu300sd`，Android 数据不动） | 内置 eMMC：收缩 userdata 划出 8 GiB（**清 Android 数据**，实验性） |
+| 取 root | 开机 ADB 窗口 → Samba `root preexec` | **BROM 刷 one-key-root 包**（自动无线 ADB）→ Samba `root preexec` |
+| 引导 | a 槽 Android / b 槽 Linux | 同左（安装器会把 a 槽启动链同步到 b 槽） |
+| 文档 | [docs/01](docs/01-device.md)–[09](docs/09-quickstart.md) | **[docs/10](docs/10-u30-air.md)** |
 
 ## 架构
 
@@ -101,15 +114,18 @@ Android → OpenWrt:  scripts\F50-切到OpenWrt.cmd
 
 ```
 mu3350s-openwrt/
-├─ docs/                      完整文档（设备信息/备份/AVB/root/安装/双系统/时间线/代理）
+├─ docs/                      完整文档（设备信息/备份/AVB/root/安装/双系统/时间线/代理/U30 Air）
 ├─ scripts/
 │  ├─ gen-trustos-patched.mjs 生成 B04 补丁版 trustos
 │  ├─ f50-root-shell.mjs      root 通道客户端（SMB 触发 + TCP 4444）
 │  ├─ setup-device-root.mjs   在 Android 上部署/恢复 root 通道与 su 兼容层
 │  ├─ patch-mu300-installer.mjs  给官方安装器打补丁
 │  ├─ installer/              Windows 安装器一键封装
-│  ├─ proxy/                  mihomo 配置示例、nftables 规则、启动脚本
+│  ├─ proxy/                  mihomo 配置示例、nftables 规则（含 U30 Air 版）、启动脚本
 │  ├─ device/                 设备端 root 通道脚本
+│  ├─ u30-backup.ps1          U30 Air 全分区备份（BROM/FDL2，只读）
+│  ├─ u30-flash-root.mjs      U30 Air root 包刷写（trustos+boot，回读校验/回滚）
+│  ├─ install-mihomo.mjs      mihomo+TPROXY+面板 一键安装（adb，支持 U30 Air/F50）
 │  └─ F50-切到*.ps1/.cmd      双系统切换（可配置路径）
 ├─ answers/                   mu300 安装器答案模板
 ├─ artifacts/                 分区备份 SHA-256 清单
@@ -129,6 +145,7 @@ mu3350s-openwrt/
 | [07 时间线与经验](docs/07-timeline-and-findings.md) | 走过的弯路、关键发现 |
 | [08 内置代理](docs/08-vpn-proxy.md) | mihomo + TPROXY + fake-ip 分流、面板 |
 | [09 日常使用](docs/09-quickstart.md) | 切换/访问/维护/排障速查 |
+| [10 U30 Air](docs/10-u30-air.md) | BROM 刷 root、32 GB 收缩 userdata、内置 mihomo（另一套机型流程） |
 
 ## 与 [mu300-linux](https://github.com/dikeckaan/mu300-linux) 的关系
 
@@ -168,6 +185,7 @@ mu3350s-openwrt/
 | 热点客户端 | 真实手机 + USB 客户端正常上网（经代理） |
 | 代理分流 | 国内直连 / 海外走节点，出口为节点 IP |
 | 重启持久化 | 断电重连后热点与代理自动恢复 |
+| **U30 Air（2026-11-03）** | BROM 备份 73 分区 / trustos+boot 写入回读一致 / 无线 ADB 5555 / Samba root / GPT 收缩 8 GiB / OpenWrt 7.3.1 启动 / 5G 通 / mihomo 分流正常 |
 
 ## 安全与合规
 
@@ -197,3 +215,6 @@ while keeping stock Android + eSIM. Root is obtained without Magisk through the 
 installer is patched to use the root channel instead of `su`. A built-in mihomo/TPROXY setup routes
 hotspot clients through a Clash-Meta subscription with rule-based split routing and a web dashboard.
 Everything is reversible with FDL flash mode and full partition backups.
+The **U30 Air (U30AirV1.0.0B33, 32 GB, no SD slot)** instead takes a BROM-flashed
+one-key-root package (patched TrustOS + Magisk boot with adb-over-IP), then the mu300-linux
+installer shrinks `userdata` to make an 8 GiB internal region for OpenWrt; see docs/10.

@@ -38,3 +38,12 @@
 - mu300 安装器在 `mu300-src\work\bootchain\<时间戳>\` 另存了一份 bootchain 备份（trustos 双槽）。
 - 本项目的双系统结构本身带 5 次启动失败自动回 Android 的兜底。
 - 只要 TF 卡不损坏，Android 的 a 槽始终可启动（切回方法见 06）。
+
+## U30 Air（73 个分区，5.29 GB）
+
+U30 Air 的 `r all` 会读出 73 个分区（含 `super` 2 GiB、`fulldumpdb` 2 GiB），共约 5.29 GB；
+SHA-256 清单见 [`artifacts/u30air-backup-manifest.sha256`](../artifacts/u30air-backup-manifest.sha256)。
+备份脚本：[`scripts/u30-backup.ps1`](../scripts/u30-backup.ps1)（双击 `scripts\U30-备份.cmd`）。
+恢复时注意 DHTB 镜像（`trustos_a/b`、`splloader`、`uboot_a/b`）小于分区，用 `wof part 0 file` 写回；
+`boot_a/b` 与分区等大，可直接 `w`。流程细节见 [10 U30 Air](10-u30-air.md)。
+

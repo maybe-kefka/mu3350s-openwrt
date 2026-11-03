@@ -120,3 +120,35 @@ ip route add local 0.0.0.0/0 dev lo table 100
 
 改配置：`/etc/mihomo/config.yaml` → `mihomo restart`。
 想看实时连接日志：`logread -e mihomo -f`。
+
+## 在 U30 Air（OpenWrt 25.12.6 / 内核 7.3.1）上安装（2026-11-03 实测通过）
+
+Linux 侧只有一条内置 eMMC 上的 8 GiB 区域，没有 TF 卡；deploy 方式与 F50 相同，差别只有 LAN 网段
+（`192.168.78.0/24`）和设备串号前缀（`MU300LINUX-…`）。
+
+```powershell
+node scripts/install-mihomo.mjs --sub "https://…/link/…?clashmeta=1" --secret "change-me"
+# F50: 加 --lan-cidr 192.168.77.0/24；GitHub 被墙时默认 --mirror https://gh-proxy.com
+```
+
+脚本完成的事情：
+
+- 下载 mihomo arm64（v1.19.x）+ metacubexd，安装到 `/usr/bin/mihomo`、`/etc/mihomo/{config.yaml,ui}`
+- 写 `/etc/mihomo/tproxy.nft`（`br-lan` 的 TCP/UDP → 7895，DNS 53 → 1053）与 `apply-tproxy.sh`（fwmark 0x1 + table 100）
+- 安装 `/etc/init.d/mihomo`（S95，procd respawn）并 enable
+- dnsmasq：`server=127.0.0.1#1053` + `noresolv=1`，fake-ip（`198.18.0.0/16`）
+- 规则集走 `gh-proxy.com` 镜像（国内拉不到 jsdelivr 时更稳）
+
+实测（客户端 = USB 网络的 192.168.78.200）：
+
+| 请求 | 结果 | mihomo 日志命中 |
+|---|---|---|
+| google.com/generate_204 | 204 | `Match → Proxy[香港-SDWAN]` |
+| youtube.com | 200 | `Match → Proxy` |
+| github.com | 200 | `Match → Proxy` |
+| baidu.com | 200 | `RuleSet(cncidr) using DIRECT` |
+
+面板：`http://192.168.78.1:9090/ui/`（API 端口 9090，secret 为安装参数）。
+
+> 注意：USB 网卡会拿到设备的默认网关（`192.168.78.1`），电脑会优先走 5G；不想要时拔 USB 或调整网卡优先级。
+
