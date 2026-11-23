@@ -1,0 +1,11 @@
+#!/system/bin/sh
+# 放进 /data/local/tmp/rootbin/su 后：mount --bind /data/local/tmp/rootbin /odm/bin
+# 作用：让 adb shell 里的 `su -c '...'` 能跑（Linux 宿主机的 install.sh 依赖它）
+# 注意：不要加 nc -q，会截断长命令输出
+if [ "$1" = "-c" ]; then
+  shift
+fi
+if [ $# -eq 0 ]; then
+  exec /system/bin/nc 127.0.0.1 4444
+fi
+printf '%s\nexit\n' "$*" | /system/bin/nc 127.0.0.1 4444
