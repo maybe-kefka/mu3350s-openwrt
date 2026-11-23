@@ -176,6 +176,7 @@ mu3350s-openwrt/
 | [08 内置代理](docs/08-vpn-proxy.md) | mihomo + TPROXY + fake-ip 分流、面板；含 U30 Air 实测 | 两者 |
 | [09 日常使用](docs/09-quickstart.md) | 切换/访问/维护/排障速查 | 两者 |
 | [10 U30 Air](docs/10-u30-air.md) | BROM 刷 root、32 GB 收缩 userdata、mihomo、回滚 | U30 Air |
+| [11 Linux 宿主机](docs/11-linux-host.md) | 不改 `install.sh` 的安装路径、方向相反的槽位与 `SYNC_BOOTCHAIN`、无 Magisk 一步回切 | F50 |
 
 ## 与 [mu300-linux](https://github.com/dikeckaan/mu300-linux) 的关系
 
